@@ -1,0 +1,358 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Microsoft.Exchange.WebServices.Data;
+using BusinessLayer;
+using System.Data.SqlClient;
+using System.Configuration;
+using System.Windows.Forms.VisualStyles;
+using System.Drawing.Text;
+using static System.Windows.Forms.AxHost;
+
+namespace EmployeeDailyStatus
+{
+    public partial class StatusEdit : Form
+    {
+        public int _StatusID = 0;
+        private StatusList _frmStatusList;
+        public string _UserID;
+        public DataTable _dtTask = new DataTable();
+      //  private bool taskAdded = false; 
+
+
+        public StatusEdit(StatusList frmStatusList, string UserID)
+        {
+            InitializeComponent();
+            _frmStatusList = frmStatusList;
+            _UserID = UserID;
+        }
+
+        public StatusEdit(int ID, StatusList frmStatusList, string UserID)
+        {
+            InitializeComponent();        
+            _StatusID = ID;
+            _frmStatusList = frmStatusList;
+            _UserID = UserID;
+        }
+
+        private void LoadforCombo()
+        {
+            BAL balobj = new BAL();
+            DataTable dtTask_Component = new DataTable();
+            try
+            {
+
+                dtTask_Component = balobj.getPossibleValues("Task");
+                CmbTask.DataSource = dtTask_Component;
+                CmbTask.DisplayMember = "Description";
+                CmbTask.ValueMember = "Attribute_Value";
+
+                dtTask_Component = balobj.getPossibleValues("Component");
+                CmbComponent.DataSource = dtTask_Component;
+                CmbComponent.DisplayMember = "Description";
+                CmbComponent.ValueMember = "Attribute_Value";
+
+                dtTask_Component = balobj.getPossibleValues("CRStatus");
+                comboBox1.DataSource = dtTask_Component;
+                comboBox1.DisplayMember = "Description";
+                comboBox1.ValueMember="Attribute_Value";
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public void StatusEdit_Load(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Maximized;
+            txtUserId.Text = _UserID;
+            DtStartDate.Value = DateTime.Now;
+            txtCR.Text = string.Empty;
+            CmbComponent.Text = string.Empty;
+            CmbTask.Text = string.Empty;
+            dtdate.Value = DateTime.Now;
+            dtPlannedCompletionDate.Value = DateTime.Now;
+            comboBox1.Text = string.Empty;
+            txtHoursWorked.Text = string.Empty;
+            txtStatus.Text = string.Empty;
+
+            LoadforCombo();
+            try
+            {
+                _dtTask.Columns.Add("Task");
+                _dtTask.Columns.Add("HoursWorked");
+                _dtTask.Columns.Add("Status");
+                
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            if (_StatusID > 0)
+            {
+                BAL balobj = new BAL();
+                DataTable dtDetails = balobj.SelectStatusById(_StatusID);
+                if (dtDetails.Rows.Count > 0)
+                {
+                    txtCR.Text = dtDetails.Rows[0]["CR"].ToString();
+                    CmbComponent.Text = dtDetails.Rows[0]["Component"].ToString();
+                    DtStartDate.Value = DateTime.Parse(dtDetails.Rows[0]["StartDate"].ToString());
+                    dtPlannedCompletionDate.Value = DateTime.Parse(dtDetails.Rows[0]["PlannedCompletionDate"].ToString());
+                    if (!string.IsNullOrEmpty(dtDetails.Rows[0]["ActualCompletionDate"].ToString()))
+                        DtActualCompletionDate.Value = DateTime.Parse(dtDetails.Rows[0]["ActualCompletionDate"].ToString());
+
+                    comboBox1.Text = dtDetails.Rows[0]["CRStatus"].ToString();
+                    _dtTask = balobj.SelectTask(_StatusID);
+                    LoadTaskgrid(_dtTask);
+                }
+            }
+        }
+
+
+        public void btnClear_Click(object sender, EventArgs e)
+        {
+            txtUserId.Text = "";
+            dtdate.Value = DateTime.Now;
+            txtCR.Text = "";
+            CmbComponent.SelectedIndex = 0;
+            CmbTask.SelectedIndex = 0;
+            DtStartDate.Value = DateTime.Now;
+            dtPlannedCompletionDate.Value = DateTime.Now;
+            DtActualCompletionDate.CustomFormat = " ";
+            DtActualCompletionDate.Tag = "0";
+            comboBox1.SelectedIndex = 0; 
+            txtHoursWorked.Text = "";
+            txtStatus.Text = string.Empty;
+
+        }
+
+        public void btnSave_Click(object sender, EventArgs e)
+        {
+
+
+            dataGridView1.EndEdit();
+            if (_dtTask == null || _dtTask.Rows.Count == 0)
+            {
+                MessageBox.Show("Please add at least one task before saving.");
+                return;
+            }
+
+
+            BAL balobj = new BAL();
+            if (Validation())
+            {
+                string UserId = txtUserId.Text;
+                DateTime date = dtdate.Value;
+                string CR = txtCR.Text;
+                string Component = CmbComponent.SelectedValue.ToString();
+                //string Task = CmbTask.SelectedValue.ToString();
+                DateTime startdate = DtStartDate.Value;
+                DateTime PlannedCompletionDate = dtPlannedCompletionDate.Value;
+
+                string ActualCompletionDate = null;
+                if (DtActualCompletionDate.Tag.ToString() == "1")
+                    ActualCompletionDate = DtActualCompletionDate.Value.ToString();
+                string CRStatus = comboBox1.SelectedValue.ToString(); 
+                //int HourWorked = Convert.ToInt32(txtHoursWorked.
+                //string status = txtStatus.Text;
+                bool result = false;
+
+
+         
+
+                DataTable leaveDetails = balobj.SelectLeaveDetails(UserId);
+
+                bool isOnLeaveToday = leaveDetails.AsEnumerable().Any(row => Convert.ToDateTime(row["LeaveFrom"]).Date == DateTime.Today);
+
+                if (isOnLeaveToday)
+                {
+                    btnSave.Enabled = false;
+                    MessageBox.Show("You are currently on leave and cannot save status updates.");
+                    return;
+                }
+                else
+                {
+                    btnSave.Enabled = true; 
+                }
+
+
+                string crStatus = comboBox1.SelectedValue?.ToString()?.Trim().ToLower();
+                bool isDateSelected = DtActualCompletionDate.Tag?.ToString() == "1";
+                DateTime selectedDate = DtActualCompletionDate.Value.Date;
+
+               
+
+
+                if (crStatus == "completed")
+                {
+                    if (!isDateSelected || selectedDate != DateTime.Today)
+                    {
+                        MessageBox.Show("Since CR status is 'Completed', Actual Completion Date must be today's date.");
+                        StatusList statusListForm = new StatusList();
+                        statusListForm.Show();
+
+                        this.Close();
+                        return;
+
+                    }
+                }
+                else 
+                {
+                    if (isDateSelected)
+                    {
+                        MessageBox.Show("If CR status is not 'Completed', Actual Completion Date must be blank.");
+                        StatusList statusListForm = new StatusList();
+                        statusListForm.Show();
+
+                        this.Close();
+                        return;
+                    }
+                }
+
+
+
+
+
+                if (_StatusID == 0)
+                    result = balobj.InsertStatus(UserId, CR, Component, startdate, PlannedCompletionDate, ActualCompletionDate,CRStatus, date, _dtTask);
+                else
+                    result = balobj.UpdateStatus(_StatusID, CR, Component, startdate, PlannedCompletionDate, ActualCompletionDate,CRStatus,_dtTask);
+                if (result == true)
+                {
+                    lblMessage.Text = "Saved Successfully";
+                }
+                else
+                {
+                    //MessageBox.Show("Try again");
+                    lblMessage.Text = "Try again";
+                }
+                this.Close();
+                _frmStatusList.LoadStatus();
+
+            }
+        }
+
+        private bool Validation()
+        {
+
+            if (txtCR.Text == string.Empty)
+            {
+                MessageBox.Show("TextBox is Empty.Enter CR");
+                return false;
+            }
+            else if (CmbComponent.Text == string.Empty)
+            {
+                MessageBox.Show("ComboBox is Empty.Enter Component");
+                return false;
+            }
+            else if (DtStartDate.Value.ToString() == string.Empty)
+            {
+                MessageBox.Show("Select the Start Date");
+                return false;
+            }
+            else if (dtPlannedCompletionDate.Value.ToString() == string.Empty)
+            {
+                MessageBox.Show("Select the Planned Completion Date");
+                return false;
+            }
+
+
+            else if (comboBox1.Text == string.Empty)
+            {
+                MessageBox.Show("ComboBox is Empty.Please Select CRStatus");
+                return false;
+            }
+            
+            else
+            {
+                return true;
+            }
+        }
+
+        private void DtActualCompletionDate_ValueChanged(object sender, EventArgs e)
+        {
+            DtActualCompletionDate.CustomFormat = "MM/dd/yyyy";
+            DtActualCompletionDate.Tag = "1";
+        }
+
+
+
+        public void LoadTaskgrid(DataTable dtTask)
+        {
+            dataGridView1.AutoGenerateColumns = false;
+            dataGridView1.DataSource = dtTask;
+            dataGridView1.Refresh();
+        }
+
+        private void btnAddtask_Click(object sender, EventArgs e)
+        {
+            // validation
+            if (ValidateTask())
+            {
+                DataRow dr = _dtTask.NewRow();
+                dr["Task"] = CmbTask.Text;
+                dr["HoursWorked"] = txtHoursWorked.Text;
+                dr["Status"] = txtStatus.Text;
+                _dtTask.Rows.Add(dr);
+                LoadTaskgrid(_dtTask);
+
+                CmbTask.SelectedIndex = -1;
+                txtHoursWorked.Text = "";
+                txtStatus.Text = "";
+              //  taskAdded = true;
+            }
+        }
+
+
+
+
+        public bool ValidateTask()
+        {
+            if (CmbTask.Text == string.Empty)
+            {
+                MessageBox.Show("ComboBox is Empty.Enter Task");
+                return false;
+            }
+            else if (txtHoursWorked.Text == string.Empty)
+            {
+                MessageBox.Show("Please enter the text Hours Worked");
+                return false;
+            }
+            else if (txtStatus.Text == string.Empty)
+            {
+                MessageBox.Show("Please enter the status");
+                return false;
+            }
+            else
+                return true;
+        }
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (dataGridView1.Columns[e.ColumnIndex].HeaderText.ToUpper() == "DELETE")
+            {
+                DataRow dr = _dtTask.Rows[e.RowIndex];
+                _dtTask.Rows.Remove(dr);
+                LoadTaskgrid(_dtTask);
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            StatusList s1 = new StatusList();
+            s1.Show();
+            this.Hide();
+        }
+        
+    }
+}
+    
