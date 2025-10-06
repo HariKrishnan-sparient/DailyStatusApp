@@ -58,17 +58,17 @@ namespace EmployeeDailyStatus
 
             DataTable dt2 = balobj.SelectSparientHoliday(dtStatus);
             dgvSparientHoliday.AutoGenerateColumns = false;
-            dgvSparientHoliday.DataSource = dt2;          
+            dgvSparientHoliday.DataSource = dt2;
             dgvSparientHoliday.Refresh();
 
-           
+
             if (dt2.Rows.Count > 0)
             {
                 dgvSparientHoliday.Visible = true;
                 label2.Visible = true;
             }
 
-            
+
             else
             {
 
@@ -76,7 +76,7 @@ namespace EmployeeDailyStatus
                 label2.Visible = false;
             }
 
-         
+
 
         }
 
@@ -146,12 +146,12 @@ namespace EmployeeDailyStatus
                 e.CellStyle.Padding = new Padding(Padding.Bottom);
             }
         }
-         
+
 
         private void StatusReview_Load(object sender, EventArgs e)
         {
             dgvReview.AutoGenerateColumns = false;
-            
+
         }
 
         private void btnSendEmail_Click(object sender, EventArgs e)
@@ -194,7 +194,7 @@ namespace EmployeeDailyStatus
                 messagebody += "<col style = \"width: 11%;\">";
                 messagebody += "<col style = \"width: 11%;\">";
                 messagebody += "<col style = \"width: 11%;\">";
-                messagebody += "<col style = \"width: 11%;\">"; 
+                messagebody += "<col style = \"width: 11%;\">";
                 messagebody += "<col style = \"width: 11%;\">";
                 messagebody += "<col style = \"width: 12%;\">";
                 messagebody += "</colgroup>";
@@ -206,12 +206,12 @@ namespace EmployeeDailyStatus
                 messagebody += htmlTdStart + "Start Date" + htmlTdEnd;
                 messagebody += htmlTdStart + "Planned Completion Date" + htmlTdEnd;
                 messagebody += htmlTdStart + "Actual Completion Date" + htmlTdEnd;
-                messagebody += htmlTdStart + "Hours Worked" + htmlTdEnd; 
+                messagebody += htmlTdStart + "Hours Worked" + htmlTdEnd;
                 messagebody += htmlTdStart + "Task" + htmlTdEnd;
                 messagebody += htmlTdStart + "Status" + htmlTdEnd;
                 messagebody += htmlHeaderRowEnd;
                 int Owner_Count = 1, CR_Count = 1, Component_Count = 1,StartDate_Count=1,ActualCompletionDate_Count=1,PlannedCompletionDate_Count=1;
-                
+
                 for (int i = 0; i <= grid.Rows.Count - 1; i++)
                 {
                     messagebody = messagebody + htmlTrStart;
@@ -221,7 +221,7 @@ namespace EmployeeDailyStatus
                     string StartDate = grid.Rows[i].Cells[3].Value.ToString();
                     string PlannedCompletionDate = grid.Rows[i].Cells[4].Value.ToString();
                     string ActualCompletionDate = grid.Rows[i].Cells[5].Value.ToString();
-                    string Hoursworked = grid.Rows[i].Cells[6].Value.ToString(); 
+                    string Hoursworked = grid.Rows[i].Cells[6].Value.ToString();
 
                     int taskCount_Owner = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[0].Value.Equals(owner));
                     int taskCount_CR = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[1].Value.Equals(CR) && r.Cells[0].Value.Equals(owner));
@@ -229,7 +229,7 @@ namespace EmployeeDailyStatus
                     int taskCount_StartDate = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[3].Value.Equals(StartDate) && r.Cells[0].Value.Equals(owner));
                     int taskCount_PlannedCompletionDate= grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[4].Value.Equals(PlannedCompletionDate) && r.Cells[0].Value.Equals(owner));
                     int taskCount_ActualCompletionDate = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[5].Value.Equals(ActualCompletionDate) && r.Cells[0].Value.Equals(owner));
-                    int taskCount_Hoursworked = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[5].Value.Equals(Hoursworked) && r.Cells[0].Value.Equals(owner)); 
+                    int taskCount_Hoursworked = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Cells[5].Value.Equals(Hoursworked) && r.Cells[0].Value.Equals(owner));
 
 
                     if (i <= grid.Rows.Count - 2 && grid.Rows[i].Cells[0].Value.ToString() == grid.Rows[i + 1].Cells[0].Value.ToString())
@@ -340,7 +340,7 @@ namespace EmployeeDailyStatus
                         string status = grid.Rows[i].Cells[6].Value.ToString().Replace("\r\n", "<br>").Replace(",", " <br>");
                         messagebody = messagebody + htmlTdStart + status + htmlTdEnd;
                     }
-                   
+
 
                     messagebody = messagebody + htmlTdStart + grid.Rows[i].Cells[7].Value + htmlTdEnd;
                     if (grid.Rows[i].Cells[8].Value.ToString() == "LEAVE")
@@ -369,15 +369,15 @@ namespace EmployeeDailyStatus
             try
             {
 
-             
+
                 if (grid.RowCount == 0)
                 {
                     return "";
                 }
                 string messagebody = "<font ><br><br><b> Leave Plan </b></font>";
-               
 
-               
+
+
                 string htmlTableStart = "<table style=\"border-collapse:collapse;text-align:left;width:60%;\">";
                 string htmlTableEnd = "</table>";
 
@@ -425,13 +425,13 @@ namespace EmployeeDailyStatus
         {
             try
             {
-               
+
                 if (grid.RowCount == 0)
                 {
                     return "";
                 }
                 string messagebody = "<font ><br><br><b> Sparient Holiday </b></font>";
-              
+
 
                 string htmlTableStart = "<table style=\"border-collapse:collapse;text-align:left;width:60%;\">";
                 string htmlTableEnd = "</table>";
@@ -469,7 +469,7 @@ namespace EmployeeDailyStatus
                 }
                 messagebody = messagebody + htmlTableEnd;
                 return messagebody;
-            
+
             }
             catch (Exception ex)
             {
@@ -486,6 +486,8 @@ namespace EmployeeDailyStatus
                 string smtpHost = ConfigurationManager.AppSettings["SMTPServer"].ToString();
                 int smtpPort = int.Parse(ConfigurationManager.AppSettings["SMTPPort"].ToString());
                 string fromAddress = (ConfigurationManager.AppSettings["EmailFrom"].ToString());
+                bool enableSSL = Convert.ToBoolean(ConfigurationManager.AppSettings["EnableSSL"]);
+                string fromAddresspwd = (ConfigurationManager.AppSettings["EmailFromPassword"].ToString());
                 string ToMailID = emailID;
                 string EmailCC = "";
 
@@ -510,6 +512,10 @@ namespace EmployeeDailyStatus
                 }
 
                 smtpClient = new System.Net.Mail.SmtpClient(smtpHost, smtpPort);
+
+                smtpClient.EnableSsl = enableSSL;
+                smtpClient.UseDefaultCredentials = false;
+                smtpClient.Credentials = new System.Net.NetworkCredential(fromAddress, fromAddresspwd);
                 smtpClient.Send(mail);
             }
             catch (SmtpException sqlEx)
@@ -527,10 +533,10 @@ namespace EmployeeDailyStatus
         private void btnShow_Click(object sender, EventArgs e)
         {
             Loadgrid();
-           if (dtDate.Value.Date == DateTime.Now.Date)
+            if (dtDate.Value.Date == DateTime.Now.Date)
 
                 btnSendEmail.Show();
-           // else
+            // else
             //    btnSendEmail.Hide();
         }
 
@@ -540,8 +546,8 @@ namespace EmployeeDailyStatus
             s1.Show();
             this.Hide();
         }
-        
-        
+
+
     }
 }
 
